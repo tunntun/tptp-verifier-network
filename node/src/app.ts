@@ -1,6 +1,7 @@
 import express from "express";
 import { randomUUID } from "crypto";
 import { PeerManager } from "./gossip/peerManager";
+import { GossipService } from "./gossip/gossipService";
 import type { BaseMessage, NewPeerPayload, PeerListPayload} from "./types/messages";
 import type { PeerInfo } from "./types/peer";
 
@@ -12,6 +13,7 @@ const NODE_ID = process.env.NODE_ID ?? "node-1";
 const HOST = process.env.HOST ?? "localhost";
 
 const peerManager = new PeerManager();
+const gossipService = new GossipService(() => peerManager.getAllPeers());
 
 function createMessage<TPayload>(
   type: BaseMessage<TPayload>["type"],
@@ -36,7 +38,7 @@ app.get("/health", (_req, res) => {
   });
 });
 
-app.post("/peers", (req, res) => {
+app.post("/peers", async (req, res) => {
   const peer = req.body as PeerInfo;
 
   if (!peer.nodeId || !peer.host || !peer.port) {
@@ -52,6 +54,9 @@ app.post("/peers", (req, res) => {
   }
 
   peerManager.addPeer(peer);
+  const newPeerMessage = createMessage<NewPeerPayload>("NEW_PEER", { peer, });
+
+  await gossipService.broadcast(newPeerMessage);
 
   const response = createMessage<PeerListPayload>("PEER_LIST", {
     peers: peerManager.getAllPeers(),
