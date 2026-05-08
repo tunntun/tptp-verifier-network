@@ -14,19 +14,26 @@ export class GossipService {
     );
   }
 
-  async sendMessage(peer: PeerInfo, message: NetworkMessage): Promise<void> {
-    const url = `http://${peer.host}:${peer.port}/messages`;
+  private async sendMessage( peer: PeerInfo, message: NetworkMessage): Promise<void> {
+    try {
+      const response = await fetch(
+        `http://${peer.host}:${peer.port}/messages`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(message),
+        }
+      );
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(message),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Peer ${peer.nodeId} responded with ${response.status}`);
+      if (!response.ok) {
+        console.error(
+          `Failed to send message to ${peer.nodeId}: ${response.status}`
+        );
+      }
+    } catch (error) {
+      console.error(`Failed to reach peer ${peer.nodeId}`);
     }
   }
 }

@@ -12,6 +12,7 @@ app.use(express.json());
 const PORT = Number(process.env.PORT ?? 3001);
 const NODE_ID = process.env.NODE_ID ?? "node-1";
 const HOST = process.env.HOST ?? "localhost";
+const MAX_TTL = 5;
 
 const peerManager = new PeerManager();
 const gossipService = new GossipService(() => peerManager.getAllPeers());
@@ -26,6 +27,7 @@ function createMessage<T extends MessageType>(
     type,
     senderNodeId: NODE_ID,
     timestamp: Date.now(),
+    ttl: MAX_TTL,
     payload,
   };
 }
@@ -87,13 +89,13 @@ app.post("/messages", async (req, res) => {
 
   messageStore.markSeen(message.messageId);
 
-  if (message.senderNodeId !== NODE_ID && !peerManager.hasPeer(message.senderNodeId)) {
-    peerManager.addPeer({
-      nodeId: message.senderNodeId,
-      host: req.hostname,
-      port: Number(req.socket.remotePort),
-    });
-  }
+  // if (message.senderNodeId !== NODE_ID && !peerManager.hasPeer(message.senderNodeId)) {
+  //   peerManager.addPeer({
+  //     nodeId: message.senderNodeId,
+  //     host: req.hostname,
+  //     port: Number(req.socket.remotePort),
+  //   });
+  // }
 
   if (message.type === "NEW_PEER") {
     const payload = message.payload;
@@ -102,6 +104,21 @@ app.post("/messages", async (req, res) => {
       peerManager.addPeer(payload.peer);
     }
   }
+
+  if (message.ttl <= 0) {
+    return res.json({
+      received: true,
+      dropped: true,
+      reason: "TTL_EXPIRED",
+      nodeId: NODE_ID,
+      messageType: message.type,
+    });
+  }
+
+  const messageToForward: NetworkMessage = {
+    ...message,
+    ttl: message.ttl - 1,
+  };
 
   await gossipService.broadcast(message, message.senderNodeId);
 

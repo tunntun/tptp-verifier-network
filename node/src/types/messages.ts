@@ -15,6 +15,7 @@ export interface BaseMessage<TPayload = unknown> {
   type: MessageType;
   senderNodeId: NodeId;
   timestamp: number;
+  ttl: number;
   payload: TPayload;
   signature?: string;
 }
