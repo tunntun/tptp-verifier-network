@@ -2,6 +2,7 @@ import express from "express";
 import { randomUUID } from "crypto";
 import { PeerManager } from "./gossip/peerManager.js";
 import { GossipService } from "./gossip/gossipService.js";
+import { MessageStore } from "./gossip/messageStore.js";
 import type { MessageType, BaseMessage, PayloadByMessageType, NetworkMessageOf, NewPeerPayload} from "./types/messages.js";
 import type { PeerInfo } from "./types/peer.js";
 
@@ -14,6 +15,7 @@ const HOST = process.env.HOST ?? "localhost";
 
 const peerManager = new PeerManager();
 const gossipService = new GossipService(() => peerManager.getAllPeers());
+const messageStore = new MessageStore();
 
 function createMessage<T extends MessageType>(
   type: T,
@@ -73,6 +75,17 @@ app.post("/messages", (req, res) => {
       error: "BAD_REQUEST",
     });
   }
+
+  if (messageStore.hasSeen(message.messageId)) {
+    return res.json({
+      received: true,
+      duplicate: true,
+      nodeId: NODE_ID,
+      messageType: message.type,
+    });
+  }
+
+  messageStore.markSeen(message.messageId);
 
    if (message.senderNodeId !== NODE_ID && !peerManager.hasPeer(message.senderNodeId)) {
     peerManager.addPeer({
