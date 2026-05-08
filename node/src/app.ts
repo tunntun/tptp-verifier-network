@@ -70,13 +70,24 @@ app.post("/messages", (req, res) => {
 
   if (!message.messageId || !message.type || !message.senderNodeId) {
     return res.status(400).json({
-      error: "Invalid message format.",
+      error: "BAD_REQUEST",
+    });
+  }
+
+   if (message.senderNodeId !== NODE_ID && !peerManager.hasPeer(message.senderNodeId)) {
+    peerManager.addPeer({
+      nodeId: message.senderNodeId,
+      host: req.hostname,
+      port: Number(req.socket.remotePort),
     });
   }
 
   if (message.type === "NEW_PEER") {
     const payload = message.payload as NewPeerPayload;
-    peerManager.addPeer(payload.peer);
+
+    if (payload.peer.nodeId !== NODE_ID) {
+      peerManager.addPeer(payload.peer);
+    }
   }
 
   return res.json({
