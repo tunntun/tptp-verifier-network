@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { PeerManager } from "./gossip/peerManager.js";
 import { GossipService } from "./gossip/gossipService.js";
 import { MessageStore } from "./gossip/messageStore.js";
-import type { MessageType, BaseMessage, PayloadByMessageType, NetworkMessageOf, NewPeerPayload} from "./types/messages.js";
+import type { MessageType, BaseMessage, PayloadByMessageType, NetworkMessageOf, NewPeerPayload, NetworkMessage} from "./types/messages.js";
 import type { PeerInfo } from "./types/peer.js";
 
 const app = express();
@@ -67,8 +67,8 @@ app.post("/peers", async (req, res) => {
   return res.json(response);
 });
 
-app.post("/messages", (req, res) => {
-  const message = req.body as BaseMessage;
+app.post("/messages", async (req, res) => {
+  const message = req.body as NetworkMessage;
 
   if (!message.messageId || !message.type || !message.senderNodeId) {
     return res.status(400).json({
@@ -87,7 +87,7 @@ app.post("/messages", (req, res) => {
 
   messageStore.markSeen(message.messageId);
 
-   if (message.senderNodeId !== NODE_ID && !peerManager.hasPeer(message.senderNodeId)) {
+  if (message.senderNodeId !== NODE_ID && !peerManager.hasPeer(message.senderNodeId)) {
     peerManager.addPeer({
       nodeId: message.senderNodeId,
       host: req.hostname,
@@ -96,12 +96,14 @@ app.post("/messages", (req, res) => {
   }
 
   if (message.type === "NEW_PEER") {
-    const payload = message.payload as NewPeerPayload;
+    const payload = message.payload;
 
     if (payload.peer.nodeId !== NODE_ID) {
       peerManager.addPeer(payload.peer);
     }
   }
+
+  await gossipService.broadcast(message, message.senderNodeId);
 
   return res.json({
     received: true,

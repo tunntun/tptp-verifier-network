@@ -1,23 +1,16 @@
-import type { PeerInfo } from "../types/peer.js";
+import type { PeerInfo, NodeId } from "../types/peer.js";
 import type { NetworkMessage } from "../types/messages.js";
 
 export class GossipService {
   constructor(private readonly getPeers: () => PeerInfo[]) {}
 
-  async broadcast(message: NetworkMessage): Promise<void> {
+  async broadcast( message: NetworkMessage, excludeNodeId?: NodeId): Promise<void> {
     const peers = this.getPeers();
 
     await Promise.all(
-      peers.map(async (peer) => {
-        try {
-          await this.sendMessage(peer, message);
-        } catch (error) {
-          console.error(
-            `Failed to send ${message.type} to ${peer.nodeId}:`,
-            error
-          );
-        }
-      })
+      peers
+        .filter((peer) => peer.nodeId !== excludeNodeId)
+        .map((peer) => this.sendMessage(peer, message))
     );
   }
 
