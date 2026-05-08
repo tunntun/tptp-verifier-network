@@ -1,5 +1,5 @@
-import type { PeerInfo, NodeId } from "./peer";
-import type { ProofRecord } from "./proof";
+import type { PeerInfo, NodeId } from "./peer.js";
+import type { ProofRecord } from "./proof.js";
 
 export type MessageType =
   | "NEW_PEER"

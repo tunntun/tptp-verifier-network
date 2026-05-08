@@ -1,5 +1,5 @@
-import type { PeerInfo } from "../types/peer";
-import type { NetworkMessage } from "../types/messages";
+import type { PeerInfo } from "../types/peer.js";
+import type { NetworkMessage } from "../types/messages.js";
 
 export class GossipService {
   constructor(private readonly getPeers: () => PeerInfo[]) {}

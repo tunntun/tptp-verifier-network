@@ -1,9 +1,9 @@
 import express from "express";
 import { randomUUID } from "crypto";
-import { PeerManager } from "./gossip/peerManager";
-import { GossipService } from "./gossip/gossipService";
-import type { MessageType, BaseMessage, PayloadByMessageType, NetworkMessageOf, NewPeerPayload} from "./types/messages";
-import type { PeerInfo } from "./types/peer";
+import { PeerManager } from "./gossip/peerManager.js";
+import { GossipService } from "./gossip/gossipService.js";
+import type { MessageType, BaseMessage, PayloadByMessageType, NetworkMessageOf, NewPeerPayload} from "./types/messages.js";
+import type { PeerInfo } from "./types/peer.js";
 
 const app = express();
 app.use(express.json());

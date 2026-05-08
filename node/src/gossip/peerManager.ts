@@ -1,4 +1,4 @@
-import type { PeerInfo, NodeId } from "../types/peer";
+import type { PeerInfo, NodeId } from "../types/peer.js";
 
 export class PeerManager {
   private peers = new Map<NodeId, PeerInfo>();
