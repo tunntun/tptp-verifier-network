@@ -2,7 +2,7 @@ import express from "express";
 import { randomUUID } from "crypto";
 import { PeerManager } from "./gossip/peerManager";
 import { GossipService } from "./gossip/gossipService";
-import type { BaseMessage, NewPeerPayload, PeerListPayload} from "./types/messages";
+import type { MessageType, BaseMessage, PayloadByMessageType, NetworkMessageOf, NewPeerPayload} from "./types/messages";
 import type { PeerInfo } from "./types/peer";
 
 const app = express();
@@ -15,10 +15,10 @@ const HOST = process.env.HOST ?? "localhost";
 const peerManager = new PeerManager();
 const gossipService = new GossipService(() => peerManager.getAllPeers());
 
-function createMessage<TPayload>(
-  type: BaseMessage<TPayload>["type"],
-  payload: TPayload
-): BaseMessage<TPayload> {
+function createMessage<T extends MessageType>(
+  type: T,
+  payload: PayloadByMessageType[T]
+): NetworkMessageOf<T> {
   return {
     messageId: randomUUID(),
     type,
@@ -54,12 +54,12 @@ app.post("/peers", async (req, res) => {
   }
 
   peerManager.addPeer(peer);
-  const newPeerMessage = createMessage<NewPeerPayload>("NEW_PEER", { peer, });
+  const newPeerMessage = createMessage("NEW_PEER", { peer, });
 
   await gossipService.broadcast(newPeerMessage);
 
-  const response = createMessage<PeerListPayload>("PEER_LIST", {
-    peers: peerManager.getAllPeers(),
+  const response = createMessage("PEER_LIST", {
+  peers: peerManager.getAllPeers(),
   });
 
   return res.json(response);

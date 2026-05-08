@@ -53,40 +53,21 @@ export interface ChainResponsePayload {
   blocks: unknown[];
 }
 
-export type NewPeerMessage = BaseMessage<NewPeerPayload> & {
-  type: "NEW_PEER";
+export type PayloadByMessageType = {
+  NEW_PEER: NewPeerPayload;
+  PEER_LIST: PeerListPayload;
+  NEW_PROOF: NewProofPayload;
+  NEW_VERIFICATION_RESULT: VerificationResultPayload;
+  NEW_BLOCK: NewBlockPayload;
+  CHAIN_REQUEST: ChainRequestPayload;
+  CHAIN_RESPONSE: ChainResponsePayload;
 };
 
-export type PeerListMessage = BaseMessage<PeerListPayload> & {
-  type: "PEER_LIST";
-};
-
-export type NewProofMessage = BaseMessage<NewProofPayload> & {
-  type: "NEW_PROOF";
-};
-
-export type VerificationResultMessage =
-  BaseMessage<VerificationResultPayload> & {
-    type: "NEW_VERIFICATION_RESULT";
+export type NetworkMessageOf<T extends MessageType> =
+  BaseMessage<PayloadByMessageType[T]> & {
+    type: T;
   };
 
-export type NewBlockMessage = BaseMessage<NewBlockPayload> & {
-  type: "NEW_BLOCK";
-};
-
-export type ChainRequestMessage = BaseMessage<ChainRequestPayload> & {
-  type: "CHAIN_REQUEST";
-};
-
-export type ChainResponseMessage = BaseMessage<ChainResponsePayload> & {
-  type: "CHAIN_RESPONSE";
-};
-
-export type NetworkMessage =
-  | NewPeerMessage
-  | PeerListMessage
-  | NewProofMessage
-  | VerificationResultMessage
-  | NewBlockMessage
-  | ChainRequestMessage
-  | ChainResponseMessage;
+export type NetworkMessage = {
+  [T in MessageType]: NetworkMessageOf<T>;
+}[MessageType];
