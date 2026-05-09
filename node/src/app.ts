@@ -1,8 +1,10 @@
 import express from "express";
-import { randomUUID } from "crypto";
+import { randomUUID , generateKeyPairSync} from "crypto";
 import { PeerManager } from "./gossip/peerManager.js";
 import { GossipService } from "./gossip/gossipService.js";
 import { MessageStore } from "./gossip/messageStore.js";
+import { signMessage } from "./crypto/signature.js";
+
 import type { MessageType, BaseMessage, PayloadByMessageType, NetworkMessageOf, NewPeerPayload, NetworkMessage} from "./types/messages.js";
 import type { PeerInfo } from "./types/peer.js";
 
@@ -14,6 +16,13 @@ const NODE_ID = process.env.NODE_ID ?? "node-1";
 const HOST = process.env.HOST ?? "localhost";
 const MAX_TTL = 5;
 
+const { publicKey, privateKey } = generateKeyPairSync("ed25519");
+
+const PUBLIC_KEY_PEM = publicKey.export({
+  type: "spki",
+  format: "pem",
+});
+
 const peerManager = new PeerManager();
 const gossipService = new GossipService(() => peerManager.getAllPeers());
 const messageStore = new MessageStore();
@@ -22,14 +31,18 @@ function createMessage<T extends MessageType>(
   type: T,
   payload: PayloadByMessageType[T]
 ): NetworkMessageOf<T> {
-  return {
+  const message = {
     messageId: randomUUID(),
     type,
     senderNodeId: NODE_ID,
     timestamp: Date.now(),
     ttl: MAX_TTL,
     payload,
-  };
+  } as NetworkMessageOf<T>;
+
+  message.signature = signMessage(message, privateKey);
+
+  return message;
 }
 
 app.get("/health", (_req, res) => {
@@ -37,6 +50,7 @@ app.get("/health", (_req, res) => {
     nodeId: NODE_ID,
     host: HOST,
     port: PORT,
+    publicKey: PUBLIC_KEY_PEM,
     status: "running",
     peers: peerManager.getAllPeers(),
   });
