@@ -1,9 +1,10 @@
 import express from "express";
-import { randomUUID , generateKeyPairSync} from "crypto";
+import { randomUUID , generateKeyPairSync, createPublicKey} from "crypto";
 import { PeerManager } from "./gossip/peerManager.js";
 import { GossipService } from "./gossip/gossipService.js";
 import { MessageStore } from "./gossip/messageStore.js";
-import { signMessage } from "./crypto/signature.js";
+import { signMessage, verifyMessage } from "./crypto/signature.js";
+import { fetchPeerInfo } from "./gossip/utils/fetchPeerInfo.js";
 
 import type { MessageType, BaseMessage, PayloadByMessageType, NetworkMessageOf, NewPeerPayload, NetworkMessage} from "./types/messages.js";
 import type { PeerInfo } from "./types/peer.js";
@@ -57,7 +58,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.post("/peers", async (req, res) => {
-  const peer = req.body as PeerInfo;
+  const peer = await fetchPeerInfo(req.body.host, req.body.port);
 
   if (!peer.nodeId || !peer.host || !peer.port) {
     return res.status(400).json({
@@ -98,6 +99,22 @@ app.post("/messages", async (req, res) => {
       duplicate: true,
       nodeId: NODE_ID,
       messageType: message.type,
+    });
+  }
+
+  const senderPeer = peerManager.getPeer(message.senderNodeId);
+
+  if (!senderPeer?.publicKey) {
+    return res.status(400).json({
+      error: "UNKNOWN_SENDER_PUBLIC_KEY",
+    });
+  }
+
+  const publicKey = createPublicKey(senderPeer.publicKey);
+
+  if (!verifyMessage(message, publicKey)) {
+    return res.status(400).json({
+      error: "INVALID_SIGNATURE",
     });
   }
 
