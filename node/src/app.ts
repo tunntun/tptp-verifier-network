@@ -87,6 +87,16 @@ app.post("/messages", async (req, res) => {
     });
   }
 
+  if (message.ttl <= 0) {
+    return res.json({
+      received: true,
+      dropped: true,
+      reason: "TTL_EXPIRED",
+      nodeId: NODE_ID,
+      messageType: message.type,
+    });
+  }
+
   messageStore.markSeen(message.messageId);
 
   // if (message.senderNodeId !== NODE_ID && !peerManager.hasPeer(message.senderNodeId)) {
@@ -105,22 +115,12 @@ app.post("/messages", async (req, res) => {
     }
   }
 
-  if (message.ttl <= 0) {
-    return res.json({
-      received: true,
-      dropped: true,
-      reason: "TTL_EXPIRED",
-      nodeId: NODE_ID,
-      messageType: message.type,
-    });
-  }
-
   const messageToForward: NetworkMessage = {
     ...message,
     ttl: message.ttl - 1,
   };
 
-  await gossipService.broadcast(message, message.senderNodeId);
+  await gossipService.broadcast(messageToForward, message.senderNodeId);
 
   return res.json({
     received: true,

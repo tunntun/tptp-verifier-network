@@ -9,8 +9,9 @@
   },
   "scripts": {
     "dev": "tsx node/src/app.ts",
-    "dev:network": "tsx scripts/run-local-network.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:network": "tsx node/scripts/runLocalNetwork.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:gossip": "tsx node/test/gossipNetwork.ts"
   },
   "repository": {
     "type": "git",
