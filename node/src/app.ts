@@ -5,6 +5,7 @@ import { GossipService } from "./gossip/gossipService.js";
 import { MessageStore } from "./gossip/messageStore.js";
 import { signMessage, verifyMessage } from "./crypto/signature.js";
 import { fetchPeerInfo } from "./gossip/utils/fetchPeerInfo.js";
+import { nodeState } from "./state/nodeState.js";
 
 import type { MessageType, BaseMessage, PayloadByMessageType, NetworkMessageOf, NewPeerPayload, NetworkMessage} from "./types/messages.js";
 import type { PeerInfo } from "./types/peer.js";
@@ -24,9 +25,10 @@ const PUBLIC_KEY_PEM = publicKey.export({
   format: "pem",
 });
 
-const peerManager = new PeerManager();
+const peerManager = nodeState.peers;
+const messageStore = nodeState.messages;
+
 const gossipService = new GossipService(() => peerManager.getAllPeers());
-const messageStore = new MessageStore();
 
 function createMessage<T extends MessageType>(
   type: T,
