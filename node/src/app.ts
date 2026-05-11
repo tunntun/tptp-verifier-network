@@ -64,6 +64,7 @@ app.get("/health", (_req, res) => {
     status: "running",
     peers: peerManager.getAllPeers(),
     proofs: nodeState.proofs.getAllProofs(),
+    verifications: nodeState.verifications.getAllResults(),
   });
 });
 
@@ -165,6 +166,14 @@ app.post("/messages", async (req, res) => {
       nodeState.proofs.addProof(proof);
     }
   }
+
+  if (message.type === "NEW_VERIFICATION_RESULT") {
+  const result = message.payload;
+
+  if (!nodeState.verifications.hasResult(result.proofId, result.verifierNodeId)) {
+    nodeState.verifications.addResult(result);
+  }
+}
 
   const messageToForward: NetworkMessage = {
     ...message,
