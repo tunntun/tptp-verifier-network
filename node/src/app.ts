@@ -47,6 +47,13 @@ function createMessage<T extends MessageType>(
 
   return message;
 }
+app.post("/create-message", (req, res) => { // DEV
+  const { type, payload } = req.body;
+
+  const message = createMessage(type, payload);
+
+  return res.json(message);
+});
 
 app.get("/health", (_req, res) => {
   res.json({
@@ -56,6 +63,7 @@ app.get("/health", (_req, res) => {
     publicKey: PUBLIC_KEY_PEM,
     status: "running",
     peers: peerManager.getAllPeers(),
+    proofs: nodeState.proofs.getAllProofs(),
   });
 });
 
@@ -145,6 +153,16 @@ app.post("/messages", async (req, res) => {
 
     if (payload.peer.nodeId !== NODE_ID) {
       peerManager.addPeer(payload.peer);
+    }
+  }
+
+  if (message.type === "NEW_PROOF") {
+    const payload = message.payload;
+
+    const proof = payload.proof;
+
+    if (!nodeState.proofs.hasProof(proof.proofId)) {
+      nodeState.proofs.addProof(proof);
     }
   }
 
