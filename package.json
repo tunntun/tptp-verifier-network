@@ -12,7 +12,8 @@
     "dev:network": "tsx node/scripts/runLocalNetwork.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:gossip": "tsx node/test/gossipNetwork.ts",
-    "test:proof-state": "tsx node/test/proofState.ts"
+    "test:proof-state": "tsx node/test/proofState.ts",
+    "test:submit-proof": "tsx node/test/submitProof.ts"
   },
   "repository": {
     "type": "git",

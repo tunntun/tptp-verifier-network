@@ -11,6 +11,7 @@ export interface ProofRecord {
   proofHash: string;
   problemContent?: string;
   proofContent?: string;
+  tptpVersion?: string;
   status: ProofStatus;
   submittedAt: number;
 }

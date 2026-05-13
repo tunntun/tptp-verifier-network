@@ -36,12 +36,24 @@ export async function runGDV(input: RunGDVInput): Promise<VerificationResult> {
   const problemFile = join(workDir, "problem.p");
   const proofFile = join(workDir, "proof.s");
 
+  const cleanedProofContent = proofContent
+    .split("\n")
+    .filter((line) => {
+      const trimmed = line.trim();
+
+      return (
+        trimmed.startsWith("fof(") ||
+        trimmed.startsWith("cnf(") ||
+        trimmed.startsWith("%")
+      );
+    })
+    .join("\n");
+
   await mkdir(workDir, { recursive: true });
 
   try {
     await writeFile(problemFile, problemContent, "utf8");
-    await writeFile(proofFile, proofContent, "utf8");
-
+    await writeFile(proofFile, cleanedProofContent, "utf8");
     const { stdout, stderr } = await execFileAsync(gdvPath, [
       "-d",
       "-l",
