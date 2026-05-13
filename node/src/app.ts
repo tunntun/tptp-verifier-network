@@ -215,6 +215,11 @@ app.post("/proofs", async (req, res) => {
     };
 
     nodeState.proofs.addProof(proof);
+    const newProofMessage = createMessage("NEW_PROOF", { proof, });
+
+    messageStore.markSeen(newProofMessage.messageId);
+
+    await gossipService.broadcast(newProofMessage);
 
     nodeState.proofs.updateProofStatus(proof.proofId, "VERIFYING");
 

@@ -28,8 +28,10 @@ export class GossipService {
       );
 
       if (!response.ok) {
+        const errorBody = await response.text();
+
         console.error(
-          `Failed to send message to ${peer.nodeId}: ${response.status}`
+          `Failed to send message to ${peer.nodeId}: ${response.status} ${errorBody}`
         );
       }
     } catch (error) {
