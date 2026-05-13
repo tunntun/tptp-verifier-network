@@ -1,14 +1,11 @@
 import express from "express";
 import { randomUUID , generateKeyPairSync, createPublicKey} from "crypto";
-import { PeerManager } from "./gossip/peerManager.js";
 import { GossipService } from "./gossip/gossipService.js";
-import { MessageStore } from "./gossip/messageStore.js";
 import { signMessage, verifyMessage } from "./crypto/signature.js";
 import { fetchPeerInfo } from "./gossip/utils/fetchPeerInfo.js";
 import { nodeState } from "./state/nodeState.js";
 import { runGDV } from "./verifier/gdvVerifier.js";
 
-import type { PeerInfo } from "./types/peer.js";
 import type { MessageType, BaseMessage, PayloadByMessageType, NetworkMessageOf, NewPeerPayload, NetworkMessage} from "./types/messages.js";
 import type { ProofRecord } from "./types/proof.js";
 
