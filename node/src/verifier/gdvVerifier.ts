@@ -15,7 +15,8 @@ export interface RunGDVInput {
   verifierNodeId: NodeId;
   problemContent: string;
   proofContent: string;
-  gdvPath: string;
+  tptpRoot: string;
+  dockerImage: string;
 }
 
 function extractSZSStatus(output: string): string | null {
@@ -28,8 +29,20 @@ function extractSZSStatus(output: string): string | null {
   return match[1];
 }
 
+function normalizeTPTPIncludes(problemContent: string): string {
+  return problemContent.replace(
+    /include\('([^']+)'\)\./g,
+    (_, includePath) => {
+      if (includePath.startsWith("/"))
+        return `include('${includePath}').`;
+
+      return `include('/tptp/${includePath}').`;
+    }
+  );
+}
+
 export async function runGDV(input: RunGDVInput): Promise<VerificationResult> {
-  const { proofId, verifierNodeId, problemContent, proofContent, gdvPath } =
+  const { proofId, verifierNodeId, problemContent, proofContent, tptpRoot, dockerImage } =
     input;
 
   const workDir = join(tmpdir(), `gdv-${proofId}-${randomUUID()}`);
@@ -52,14 +65,26 @@ export async function runGDV(input: RunGDVInput): Promise<VerificationResult> {
   await mkdir(workDir, { recursive: true });
 
   try {
-    await writeFile(problemFile, problemContent, "utf8");
+    const normalizedProblemContent = normalizeTPTPIncludes(problemContent);
+
+    await writeFile(problemFile, normalizedProblemContent, "utf8");
     await writeFile(proofFile, cleanedProofContent, "utf8");
-    const { stdout, stderr } = await execFileAsync(gdvPath, [
+    const { stdout, stderr } = await execFileAsync("docker", [
+      "run",
+      "--rm",
+      "--platform",
+      "linux/amd64",
+      "-v",
+      `${workDir}:/work`,
+      "-v",
+      `${tptpRoot}:/tptp:ro`,
+      dockerImage,
+      "GDV",
       "-d",
       "-l",
       "-p",
-      problemFile,
-      proofFile,
+      "/work/problem.p",
+      "/work/proof.s",
     ]);
 
     const gdvOutput = `${stdout}\n${stderr}`;

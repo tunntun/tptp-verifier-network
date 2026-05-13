@@ -1,5 +1,6 @@
 import express from "express";
 import { randomUUID , generateKeyPairSync, createPublicKey} from "crypto";
+import "dotenv/config";
 import { GossipService } from "./gossip/gossipService.js";
 import { signMessage, verifyMessage } from "./crypto/signature.js";
 import { fetchPeerInfo } from "./gossip/utils/fetchPeerInfo.js";
@@ -16,6 +17,8 @@ const PORT = Number(process.env.PORT ?? 3001);
 const NODE_ID = process.env.NODE_ID ?? "node-1";
 const HOST = process.env.HOST ?? "localhost";
 const MAX_TTL = 5;
+const TPTP_ROOT = process.env.TPTP_ROOT;
+const DOCKER_IMAGE = process.env.GDV_DOCKER_IMAGE ?? "gdv";
 
 const { publicKey, privateKey } = generateKeyPairSync("ed25519");
 
@@ -189,6 +192,9 @@ app.post("/messages", async (req, res) => {
 });
 
 app.post("/proofs", async (req, res) => {
+  if (!TPTP_ROOT) { //TODO: Security check
+    return res.status(500).json({ error: "BAD_REQUEST" });
+  }
   try {
     const {
       problemHash,
@@ -217,7 +223,8 @@ app.post("/proofs", async (req, res) => {
       verifierNodeId: NODE_ID,
       problemContent,
       proofContent,
-      gdvPath,
+      tptpRoot: TPTP_ROOT,
+      dockerImage: DOCKER_IMAGE,
     });
 
     nodeState.verifications.addResult(verificationResult);

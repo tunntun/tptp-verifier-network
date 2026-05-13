@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/tunntun/tptp-verifier-network#readme",
   "dependencies": {
+    "dotenv": "^17.4.2",
     "express": "^5.2.1"
   },
   "devDependencies": {
