@@ -1,5 +1,8 @@
 import type { PeerInfo, NodeId } from "./peer.js";
 import type { ProofRecord } from "./proof.js";
+import type { VerificationResult } from "./verification.js";
+
+export type VerificationResultPayload = VerificationResult;
 
 export type MessageType =
   | "NEW_PEER"
@@ -32,14 +35,6 @@ export interface NewProofPayload {
   proof: ProofRecord;
 }
 
-export interface VerificationResultPayload {
-  proofId: string;
-  verifierNodeId: NodeId;
-  verified: boolean;
-  szsStatus: string | null;
-  gdvOutputHash: string;
-  verifiedAt: number;
-}
 
 export interface NewBlockPayload {
   blockHash: string;

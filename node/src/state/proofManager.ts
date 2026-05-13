@@ -1,4 +1,4 @@
-import type { ProofRecord } from "../types/proof.js";
+import type { ProofRecord, ProofStatus } from "../types/proof.js";
 
 export class ProofManager {
   private proofs = new Map<string, ProofRecord>();
@@ -13,6 +13,15 @@ export class ProofManager {
 
   getProof(proofId: string): ProofRecord | undefined {
     return this.proofs.get(proofId);
+  }
+
+  updateProofStatus(proofId: string, status: ProofStatus): void {
+    const proof = this.proofs.get(proofId);
+
+    if (!proof)
+      return;
+
+    proof.status = status;
   }
 
   getAllProofs(): ProofRecord[] {

@@ -6,9 +6,11 @@ import { MessageStore } from "./gossip/messageStore.js";
 import { signMessage, verifyMessage } from "./crypto/signature.js";
 import { fetchPeerInfo } from "./gossip/utils/fetchPeerInfo.js";
 import { nodeState } from "./state/nodeState.js";
+import { runGDV } from "./verifier/gdvVerifier.js";
 
-import type { MessageType, BaseMessage, PayloadByMessageType, NetworkMessageOf, NewPeerPayload, NetworkMessage} from "./types/messages.js";
 import type { PeerInfo } from "./types/peer.js";
+import type { MessageType, BaseMessage, PayloadByMessageType, NetworkMessageOf, NewPeerPayload, NetworkMessage} from "./types/messages.js";
+import type { ProofRecord } from "./types/proof.js";
 
 const app = express();
 app.use(express.json());
@@ -188,6 +190,69 @@ app.post("/messages", async (req, res) => {
     messageType: message.type,
   });
 });
+
+app.post("/proofs", async (req, res) => {
+  try {
+    const {
+      problemHash,
+      proofHash,
+      problemContent,
+      proofContent,
+      gdvPath,
+    } = req.body;
+
+    const proof: ProofRecord = {
+      proofId: randomUUID(),
+      problemHash,
+      proofHash,
+      problemContent,
+      proofContent,
+      status: "PENDING",
+      submittedAt: Date.now(),
+    };
+
+    nodeState.proofs.addProof(proof);
+
+    nodeState.proofs.updateProofStatus(proof.proofId, "VERIFYING");
+
+    const verificationResult = await runGDV({
+      proofId: proof.proofId,
+      verifierNodeId: NODE_ID,
+      problemContent,
+      proofContent,
+      gdvPath,
+    });
+
+    nodeState.verifications.addResult(verificationResult);
+
+    nodeState.proofs.updateProofStatus(
+      proof.proofId,
+      verificationResult.verified ? "VERIFIED" : "FAILED"
+    );
+
+    return res.status(201).json({
+      proof: nodeState.proofs.getProof(proof.proofId),
+      verificationResult,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to submit and verify proof",
+    });
+  }
+});
+
+app.get("/proofs", (_req, res) => {
+  res.json({
+    proofs: nodeState.proofs.getAllProofs(),
+  });
+});
+
+app.get("/verification-results", (_req, res) => {
+  res.json({
+    verificationResults: nodeState.verifications.getAllResults(),
+  });
+});
+
 
 app.listen(PORT, () => {
   console.log(`${NODE_ID} running on http://${HOST}:${PORT}`);
