@@ -77,15 +77,15 @@ app.get("/identity", (req, res) => {
 app.post("/peers", async (req, res) => {
   const peer = await fetchPeerInfo(req.body.host, req.body.port);
 
-  if (!peer.nodeId || !peer.host || !peer.port) {
+  if (!peer.nodeId || !peer.host || !peer.port || !peer.publicKey) {
     return res.status(400).json({
-      error: "nodeId, host, and port are required.",
+      error: "PEER_NOT_FOUND",
     });
   }
 
   if (peer.nodeId === NODE_ID) {
     return res.status(400).json({
-      error: "Node cannot add itself as a peer.",
+      error: "BAD_REQUEST",
     });
   }
 

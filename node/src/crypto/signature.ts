@@ -2,7 +2,7 @@ import { sign, verify, type KeyObject } from "crypto";
 import type { BaseMessage } from "../types/messages.js";
 
 export function messageToSign(message: BaseMessage): string {
-  const { signature, ...unsignedMessage } = message;
+  const { signature, ttl, ...unsignedMessage } = message;
   return JSON.stringify(unsignedMessage);
 }
 
