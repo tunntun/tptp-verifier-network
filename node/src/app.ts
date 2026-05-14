@@ -20,7 +20,7 @@ const HOST = process.env.HOST ?? "localhost";
 const PUBLIC_KEY_PEM = nodeKeys.publicKeyPEM;
 const MAX_TTL = 5;
 const TPTP_ROOT = process.env.TPTP_ROOT;
-const DOCKER_IMAGE = process.env.GDV_DOCKER_IMAGE ?? "gdv";
+const GDV_DOCKER_IMAGE = process.env.GDV_DOCKER_IMAGE ?? "gdv";
 
 const peerManager = nodeState.peers;
 const messageStore = nodeState.messages;
@@ -165,21 +165,45 @@ app.post("/messages", async (req, res) => {
 
   if (message.type === "NEW_PROOF") {
     const payload = message.payload;
-
     const proof = payload.proof;
 
     if (!nodeState.proofs.hasProof(proof.proofId)) {
+      if (typeof proof.problemContent !== "string" || typeof proof.proofContent !== "string")
+        return res.status(400).json({ error: "INVALID_PROOF_CONTENT",});
+
+      const problemContent: string = proof.problemContent;
+      const proofContent: string = proof.proofContent;
+
+      if (!TPTP_ROOT || !GDV_DOCKER_IMAGE)
+        return res.status(500).json({ error: "MISSING_GDV_CONFIGURATION",});
+
       nodeState.proofs.addProof(proof);
+
+      const result = await runGDV({
+        proofId: proof.proofId,
+        verifierNodeId: NODE_ID,
+        problemContent,
+        proofContent,
+        tptpRoot: TPTP_ROOT,
+        dockerImage: GDV_DOCKER_IMAGE,
+      });
+
+      nodeState.verifications.addResult(result);
+
+      const verificationMessage = createMessage("NEW_VERIFICATION_RESULT", result);
+
+      await gossipService.broadcast(verificationMessage);
     }
   }
 
-  if (message.type === "NEW_VERIFICATION_RESULT") {
-  const result = message.payload;
 
-  if (!nodeState.verifications.hasResult(result.proofId, result.verifierNodeId)) {
-    nodeState.verifications.addResult(result);
+  if (message.type === "NEW_VERIFICATION_RESULT") {
+    const result = message.payload;
+
+    if (!nodeState.verifications.hasResult(result.proofId, result.verifierNodeId)) {
+      nodeState.verifications.addResult(result);
+    }
   }
-}
 
   const messageToForward: NetworkMessage = {
     ...message,
@@ -233,7 +257,7 @@ app.post("/proofs", async (req, res) => {
       problemContent,
       proofContent,
       tptpRoot: TPTP_ROOT,
-      dockerImage: DOCKER_IMAGE,
+      dockerImage: GDV_DOCKER_IMAGE,
     });
 
     nodeState.verifications.addResult(verificationResult);

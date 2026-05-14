@@ -12,30 +12,33 @@ async function postJson(url: string, body: unknown) {
 
 async function main() {
   await postJson("http://localhost:3001/peers", {
-    nodeId: "node-2",
     host: "localhost",
     port: 3002,
   });
 
-  await postJson("http://localhost:3002/peers", {
-    nodeId: "node-3",
+  await postJson("http://localhost:3001/peers", {
     host: "localhost",
     port: 3003,
   });
 
-  await postJson("http://localhost:3001/messages", {
-    messageId: "ttl-test-script-1",
-    type: "NEW_PEER",
-    senderNodeId: "external-node",
-    timestamp: Date.now(),
-    ttl: 1,
-    payload: {
-      peer: {
-        nodeId: "node-x",
-        host: "localhost",
-        port: 9999,
-      },
-    },
+  await postJson("http://localhost:3002/peers", {
+    host: "localhost",
+    port: 3001,
+  });
+
+  await postJson("http://localhost:3002/peers", {
+    host: "localhost",
+    port: 3003,
+  });
+
+  await postJson("http://localhost:3003/peers", {
+    host: "localhost",
+    port: 3001,
+  });
+
+  await postJson("http://localhost:3003/peers", {
+    host: "localhost",
+    port: 3002,
   });
 
   await sleep(500);
