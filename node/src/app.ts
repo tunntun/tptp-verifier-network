@@ -1,8 +1,9 @@
 import express from "express";
-import { randomUUID , generateKeyPairSync, createPublicKey} from "crypto";
+import { randomUUID , createPublicKey} from "crypto";
 import "dotenv/config";
 import { GossipService } from "./gossip/gossipService.js";
 import { signMessage, verifyMessage } from "./crypto/signature.js";
+import { nodeKeys } from "./crypto/keyPair.js";
 import { fetchPeerInfo } from "./gossip/utils/fetchPeerInfo.js";
 import { nodeState } from "./state/nodeState.js";
 import { runGDV } from "./verifier/gdvVerifier.js";
@@ -16,16 +17,10 @@ app.use(express.json());
 const PORT = Number(process.env.PORT ?? 3001);
 const NODE_ID = process.env.NODE_ID ?? "node-1";
 const HOST = process.env.HOST ?? "localhost";
+const PUBLIC_KEY_PEM = nodeKeys.publicKeyPEM;
 const MAX_TTL = 5;
 const TPTP_ROOT = process.env.TPTP_ROOT;
 const DOCKER_IMAGE = process.env.GDV_DOCKER_IMAGE ?? "gdv";
-
-const { publicKey, privateKey } = generateKeyPairSync("ed25519");
-
-const PUBLIC_KEY_PEM = publicKey.export({
-  type: "spki",
-  format: "pem",
-});
 
 const peerManager = nodeState.peers;
 const messageStore = nodeState.messages;
@@ -45,8 +40,7 @@ function createMessage<T extends MessageType>(
     payload,
   } as NetworkMessageOf<T>;
 
-  message.signature = signMessage(message, privateKey);
-
+  message.signature = signMessage(message, nodeKeys.privateKey);
   return message;
 }
 app.post("/create-message", (req, res) => { // DEV
@@ -67,6 +61,16 @@ app.get("/health", (_req, res) => {
     peers: peerManager.getAllPeers(),
     proofs: nodeState.proofs.getAllProofs(),
     verifications: nodeState.verifications.getAllResults(),
+  });
+});
+
+app.get("/identity", (req, res) => {
+  res.json({
+    nodeId: NODE_ID,
+    host: HOST,
+    port: PORT,
+    publicKey: PUBLIC_KEY_PEM,
+    status: "running",
   });
 });
 
