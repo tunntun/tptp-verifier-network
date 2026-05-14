@@ -83,11 +83,8 @@ app.post("/peers", async (req, res) => {
     });
   }
 
-  if (peer.nodeId === NODE_ID) {
-    return res.status(400).json({
-      error: "BAD_REQUEST",
-    });
-  }
+  if (peer.nodeId === NODE_ID || peer.publicKey === nodeKeys.publicKeyPEM)
+    return res.status(400).json({ error: "CANNOT_ADD_SELF", });
 
   peerManager.addPeer(peer);
   const newPeerMessage = createMessage("NEW_PEER", { peer, });
